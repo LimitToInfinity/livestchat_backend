@@ -17,9 +17,18 @@ io.on('connection', socket => {
   });
 
   socket.on('chat message', message => {
-    console.log(message);
     socket.broadcast.emit('message', message);
   });
+
+  socket.on('join room', room => socket.join(room));
+  socket.on('leave room', room => {
+    socket.leave(room)
+    console.log(socket.rooms);
+  });
+
+  socket.on('room message', (room, message) => {
+    socket.to(room).emit('room message', message);
+  })
 });
 
 http.listen(port, () => console.log(`listening on port ${port}`));
