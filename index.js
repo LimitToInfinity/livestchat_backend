@@ -28,16 +28,15 @@ io.on('connection', socket => {
 
   socket.on('join room', (room, sendPeople) => {
     const { name } = socket.handshake.query;
-    socket.join(room)
-    rooms[room]
-      ? rooms[room].push(name)
-      : rooms[room] = [name];
-    sendPeople(rooms[room].filter(person => person !== name));
+    socket.join(room);
+    socket.to(room).emit('someone joined', name);
+    joinRoom(room, name);
+    const allOtherPeopleInRoom = rooms[room].filter(person => person !== name);
+    sendPeople(allOtherPeopleInRoom);
   });
   socket.on('leave room', room => {
     const { name } = socket.handshake.query;
-    console.log(room, name);
-    socket.leave(room)
+    socket.leave(room);
     leaveRoom(room, name);
     socket.to(room).emit('someone left', name);
   });
@@ -46,6 +45,12 @@ io.on('connection', socket => {
     socket.to(room).emit('room message', message);
   });
 });
+
+function joinRoom(room, username) {
+  rooms[room]
+    ? rooms[room].push(username)
+    : rooms[room] = [username];
+}
 
 function leaveRoom(room, username) {
   if (rooms[room]) {
