@@ -17,8 +17,7 @@ io.on('connection', socket => {
   });
 
   socket.on('disconnect', () => {
-    leaveAllRooms(socket.handshake.query.name);
-
+    leaveAllRooms(socket);
     console.log('a user disconnected');
   });
 
@@ -26,33 +25,37 @@ io.on('connection', socket => {
     socket.broadcast.emit('message', message);
   });
 
-  socket.on('join room', (room, sendPeople) => {
-    const { name } = socket.handshake.query;
-    socket.join(room);
-    socket.to(room).emit('someone joined', name);
-    joinRoom(room, name);
-    const allOtherPeopleInRoom = rooms[room].filter(person => person !== name);
-    sendPeople(allOtherPeopleInRoom);
-  });
-  socket.on('leave room', room => {
-    const { name } = socket.handshake.query;
-    socket.leave(room);
-    leaveRoom(room, name);
-    socket.to(room).emit('someone left', name);
-  });
+  socket.on('join room', (room, sendPeople) => joinRoom(room, sendPeople, socket));
+  socket.on('leave room', room => leaveRoom(room, socket));
 
   socket.on('room message', (room, message) => {
     socket.to(room).emit('room message', message);
   });
 });
 
-function joinRoom(room, username) {
+function joinRoom(room, sendPeople, socket) {
+  const { name } = socket.handshake.query;
+  socket.join(room);
+  socket.to(room).emit('someone joined', name);
+  addToRoom(room, name);
+  const allOtherPeopleInRoom = rooms[room].filter(person => person !== name);
+  sendPeople(allOtherPeopleInRoom);
+}
+
+function addToRoom(room, username) {
   rooms[room]
     ? rooms[room].push(username)
     : rooms[room] = [username];
 }
 
-function leaveRoom(room, username) {
+function leaveRoom(room, socket) {
+  const { name } = socket.handshake.query;
+  socket.leave(room);
+  socket.to(room).emit('someone left', name);
+  removeFromRoom(room, name);
+}
+
+function removeFromRoom(room, username) {
   if (rooms[room]) {
     const index = rooms[room].indexOf(username);
     if (index > -1) {
@@ -61,11 +64,12 @@ function leaveRoom(room, username) {
   }
 }
 
-function leaveAllRooms(username) {
+function leaveAllRooms(socket) {
+  const { name } = socket.handshake.query;
   Object.keys(rooms).forEach(room => {
-    const foundPerson = rooms[room].find(person => person === username);
+    const foundPerson = rooms[room].find(person => person === name);
     if (foundPerson) {
-      leaveRoom(room, username);
+      leaveRoom(room, socket);
     }
   });
 }
