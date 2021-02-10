@@ -35,13 +35,16 @@ io.on('connection', socket => {
     sendPeople(rooms[room].filter(person => person !== name));
   });
   socket.on('leave room', room => {
+    const { name } = socket.handshake.query;
+    console.log(room, name);
     socket.leave(room)
-    leaveRoom(room, socket.handshake.query.name);
+    leaveRoom(room, name);
+    socket.to(room).emit('someone left', name);
   });
 
   socket.on('room message', (room, message) => {
     socket.to(room).emit('room message', message);
-  })
+  });
 });
 
 function leaveRoom(room, username) {
