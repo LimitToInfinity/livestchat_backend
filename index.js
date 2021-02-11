@@ -16,11 +16,16 @@ io.on('connection', socket => {
     socket.to(anotherSocketId).emit('private message', socket.id, message);
   });
 
+  // socket.on("disconnect", () => {
+  //   // socket.to(broadcaster).emit("disconnect peer", socket.id);
+  //   console.log('disconnect');
+  // });
   socket.on('disconnect', () => {
     leaveAllRooms(socket);
+    socket.broadcast.emit('disconnect video', socket.id);
     console.log('a user disconnected');
   });
-
+  
   socket.on('chat message', message => {
     socket.broadcast.emit('message', message);
   });
@@ -31,6 +36,43 @@ io.on('connection', socket => {
   socket.on('room message', (room, message) => {
     const { username } = socket.handshake.query;
     socket.to(room).emit('room message', message, username);
+  });
+
+  socket.on('video chat', () => {
+    console.log('video chat');
+  });
+
+  // socket.on("offer", (id, message) => {
+  //   socket.to(id).emit("offer", socket.id, message);
+  // });
+  socket.on('offer', offer => {
+    console.log('offer', offer);
+    socket.broadcast.emit('offer', offer, socket.id);
+  });
+
+  // socket.on("candidate", (id, message) => {
+  //   socket.to(id).emit("candidate", socket.id, message);
+  // });
+  socket.on('candidate', candidate => {
+    console.log('candidate', candidate);
+    socket.broadcast.emit('candidate', candidate, socket.id);
+  });
+
+  socket.on("broadcaster", () => {
+    // broadcaster = socket.id;
+    // socket.broadcast.emit("broadcaster");
+    console.log('broadcaster');
+  });
+
+  socket.on("watcher", () => {
+    // socket.to(broadcaster).emit("watcher", socket.id);
+    console.log('watcher');
+  });
+
+  socket.on('answer', description => {
+    // socket.to(id).emit("answer", socket.id, message);
+    console.log('answer', description);
+    socket.broadcast.emit('answer', description);
   });
 });
 
