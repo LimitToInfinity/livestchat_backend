@@ -10,7 +10,7 @@ const rooms = {};
 
 io.on('connection', socket => {
   console.log(`a user connected at ${socket.id}`);
-  users[socket.id] = socket.handshake.query.name;
+  users[socket.id] = socket.handshake.query.username;
 
   socket.on('private message', (anotherSocketId, message) => {
     socket.to(anotherSocketId).emit('private message', socket.id, message);
@@ -29,16 +29,17 @@ io.on('connection', socket => {
   socket.on('leave room', room => leaveRoom(room, socket));
 
   socket.on('room message', (room, message) => {
-    socket.to(room).emit('room message', message);
+    const { username } = socket.handshake.query;
+    socket.to(room).emit('room message', message, username);
   });
 });
 
 function joinRoom(room, sendPeople, socket) {
-  const { name } = socket.handshake.query;
+  const { username } = socket.handshake.query;
   socket.join(room);
-  socket.to(room).emit('someone joined', name);
-  addToRoom(room, name);
-  const allOtherPeopleInRoom = rooms[room].filter(person => person !== name);
+  socket.to(room).emit('someone joined', username);
+  addToRoom(room, username);
+  const allOtherPeopleInRoom = rooms[room].filter(person => person !== username);
   sendPeople(allOtherPeopleInRoom);
 }
 
@@ -49,10 +50,10 @@ function addToRoom(room, username) {
 }
 
 function leaveRoom(room, socket) {
-  const { name } = socket.handshake.query;
+  const { username } = socket.handshake.query;
   socket.leave(room);
-  socket.to(room).emit('someone left', name);
-  removeFromRoom(room, name);
+  socket.to(room).emit('someone left', username);
+  removeFromRoom(room, username);
 }
 
 function removeFromRoom(room, username) {
@@ -65,9 +66,9 @@ function removeFromRoom(room, username) {
 }
 
 function leaveAllRooms(socket) {
-  const { name } = socket.handshake.query;
+  const { username } = socket.handshake.query;
   Object.keys(rooms).forEach(room => {
-    const foundPerson = rooms[room].find(person => person === name);
+    const foundPerson = rooms[room].find(person => person === username);
     if (foundPerson) {
       leaveRoom(room, socket);
     }
