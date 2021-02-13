@@ -36,8 +36,6 @@ io.on('connection', socket => {
   });
 
   socket.on('ask for users', () => {
-    console.log('ask for users', socket.id);
-    console.log('io', io);
     io.to(socket.id).emit('get users', otherUsers(socket.id));
   })
 
