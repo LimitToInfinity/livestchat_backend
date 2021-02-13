@@ -12,20 +12,17 @@ io.on('connection', socket => {
   console.log(`a user connected at ${socket.id}`);
   users[socket.id] = socket.handshake.query.username;
 
+  socket.on('disconnect', () => {
+    leaveAllRooms(socket);
+    socket.broadcast.emit('disconnect video', socket.id);
+    delete users[socket.id];
+    console.log('a user disconnected');
+  });
+
   socket.on('private message', (anotherSocketId, message) => {
     socket.to(anotherSocketId).emit('private message', socket.id, message);
   });
 
-  // socket.on("disconnect", () => {
-  //   // socket.to(broadcaster).emit("disconnect peer", socket.id);
-  //   console.log('disconnect');
-  // });
-  socket.on('disconnect', () => {
-    leaveAllRooms(socket);
-    socket.broadcast.emit('disconnect video', socket.id);
-    console.log('a user disconnected');
-  });
-  
   socket.on('chat message', message => {
     socket.broadcast.emit('message', message);
   });
@@ -38,43 +35,30 @@ io.on('connection', socket => {
     socket.to(room).emit('room message', message, username);
   });
 
-  socket.on('video chat', () => {
-    console.log('video chat');
+  socket.on('ask for users', () => {
+    io.to(socket.id).emit('get users', otherUsers(socket.id));
+  })
+
+  socket.on('offer', (offer, otherUserSocketId) => {
+    const username = users[socket.id];
+    socket.to(otherUserSocketId).emit('offer', offer, socket.id, username);
+  });
+  socket.on('offer candidate', candidate => {
+    socket.broadcast.emit('offer candidate', candidate, socket.id);
   });
 
-  // socket.on("offer", (id, message) => {
-  //   socket.to(id).emit("offer", socket.id, message);
-  // });
-  socket.on('offer', offer => {
-    console.log('offer', offer);
-    socket.broadcast.emit('offer', offer, socket.id);
+  socket.on('answer', (answer, senderSocketId) => {
+    socket.to(senderSocketId).emit('answer', answer, socket.id);
   });
-
-  // socket.on("candidate", (id, message) => {
-  //   socket.to(id).emit("candidate", socket.id, message);
-  // });
-  socket.on('candidate', candidate => {
-    console.log('candidate', candidate);
-    socket.broadcast.emit('candidate', candidate, socket.id);
-  });
-
-  socket.on("broadcaster", () => {
-    // broadcaster = socket.id;
-    // socket.broadcast.emit("broadcaster");
-    console.log('broadcaster');
-  });
-
-  socket.on("watcher", () => {
-    // socket.to(broadcaster).emit("watcher", socket.id);
-    console.log('watcher');
-  });
-
-  socket.on('answer', description => {
-    // socket.to(id).emit("answer", socket.id, message);
-    console.log('answer', description);
-    socket.broadcast.emit('answer', description);
+  socket.on('answer candidate', (candidate, senderSocketId) => {
+    socket.to(senderSocketId).emit('answer candidate', candidate, socket.id);
   });
 });
+
+function otherUsers(currentUserSocketId) {
+  return Object.keys(users)
+    .filter(socketId => socketId !== currentUserSocketId);
+}
 
 function joinRoom(room, sendPeople, socket) {
   const { username } = socket.handshake.query;
