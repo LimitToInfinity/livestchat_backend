@@ -76,6 +76,8 @@ function addToRoom(room, username) {
 }
 
 function leaveRoom(room, socket) {
+  socket.broadcast.emit('disconnect video', socket.id);
+
   const { username } = socket.handshake.query;
   socket.leave(room);
   socket.to(room).emit('someone left', username);
