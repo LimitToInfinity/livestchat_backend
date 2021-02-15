@@ -35,16 +35,20 @@ io.on('connection', socket => {
     socket.to(room).emit('room message', message, username);
   });
 
-  socket.on('ask for users', () => {
-    io.to(socket.id).emit('get users', otherUsers(socket.id));
+  socket.on('ask for users', room => {
+    io.to(socket.id).emit('get users', otherUsers(room, socket.id));
   })
 
-  socket.on('offer', (offer, otherUserSocketId) => {
+  socket.on('enter offer', (offer, receiverSocketId) => {
     const username = users[socket.id];
-    socket.to(otherUserSocketId).emit('offer', offer, socket.id, username);
+    socket.to(receiverSocketId).emit('enter offer', offer, socket.id, username, true);
   });
-  socket.on('offer candidate', candidate => {
-    socket.broadcast.emit('offer candidate', candidate, socket.id);
+  socket.on('return offer', (offer, senderSocketId) => {
+    const username = users[socket.id];
+    socket.to(senderSocketId).emit('return offer', offer, socket.id, username, false);
+  });
+  socket.on('offer candidate', (candidate, receiverSocketId) => {
+    socket.to(receiverSocketId).emit('offer candidate', candidate, socket.id);
   });
 
   socket.on('answer', (answer, senderSocketId) => {
@@ -55,8 +59,8 @@ io.on('connection', socket => {
   });
 });
 
-function otherUsers(currentUserSocketId) {
-  return Object.keys(users)
+function otherUsers(room, currentUserSocketId) {
+  return Object.keys(rooms[room])
     .filter(socketId => socketId !== currentUserSocketId);
 }
 
@@ -64,15 +68,16 @@ function joinRoom(room, sendPeople, socket) {
   const { username } = socket.handshake.query;
   socket.join(room);
   socket.to(room).emit('someone joined', username);
-  addToRoom(room, username);
-  const allOtherPeopleInRoom = rooms[room].filter(person => person !== username);
+  addToRoom(room, socket.id, username);
+  const allOtherPeopleInRoom = Object.values(rooms[room])
+    .filter(roomUsername => roomUsername !== username);
   sendPeople(allOtherPeopleInRoom);
 }
 
-function addToRoom(room, username) {
+function addToRoom(room, socketId, username) {
   rooms[room]
-    ? rooms[room].push(username)
-    : rooms[room] = [username];
+    ? rooms[room][socketId] = username
+    : rooms[room] = { [socketId]: username };
 }
 
 function leaveRoom(room, socket) {
@@ -81,22 +86,21 @@ function leaveRoom(room, socket) {
   const { username } = socket.handshake.query;
   socket.leave(room);
   socket.to(room).emit('someone left', username);
-  removeFromRoom(room, username);
+  removeFromRoom(room, socket.id);
 }
 
-function removeFromRoom(room, username) {
+function removeFromRoom(room, socketId) {
   if (rooms[room]) {
-    const index = rooms[room].indexOf(username);
-    if (index > -1) {
-      rooms[room].splice(index, 1);
+    delete rooms[room][socketId];
+    if (!Object.keys(rooms[room]).length) {
+      delete rooms[room]
     }
   }
 }
 
 function leaveAllRooms(socket) {
-  const { username } = socket.handshake.query;
   Object.keys(rooms).forEach(room => {
-    const foundPerson = rooms[room].find(person => person === username);
+    const foundPerson = rooms[room][socket.id];
     if (foundPerson) {
       leaveRoom(room, socket);
     }
