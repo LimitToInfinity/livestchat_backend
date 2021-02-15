@@ -39,23 +39,17 @@ io.on('connection', socket => {
     io.to(socket.id).emit('get users', otherUsers(room, socket.id));
   })
 
-  socket.on('enter offer', (offer, receiverSocketId) => {
+  socket.on('offer', (offer, socketId, offerType) => {
     const username = users[socket.id];
-    socket.to(receiverSocketId).emit('enter offer', offer, socket.id, username, true);
-  });
-  socket.on('return offer', (offer, senderSocketId) => {
-    const username = users[socket.id];
-    socket.to(senderSocketId).emit('return offer', offer, socket.id, username, false);
-  });
-  socket.on('offer candidate', (candidate, receiverSocketId) => {
-    socket.to(receiverSocketId).emit('offer candidate', candidate, socket.id);
+    socket.to(socketId).emit('offer', offer, socket.id, username, offerType);
   });
 
   socket.on('answer', (answer, senderSocketId) => {
     socket.to(senderSocketId).emit('answer', answer, socket.id);
   });
-  socket.on('answer candidate', (candidate, senderSocketId) => {
-    socket.to(senderSocketId).emit('answer candidate', candidate, socket.id);
+
+  socket.on('candidate', (candidate, socketId, offerOrAnswer) => {
+    socket.to(socketId).emit('candidate', candidate, socket.id, offerOrAnswer);
   });
 });
 
