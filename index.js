@@ -30,6 +30,8 @@ io.on('connection', socket => {
   socket.on('join room', (room, sendPeople) => joinRoom(room, sendPeople, socket));
   socket.on('leave room', room => leaveRoom(room, socket));
 
+  socket.on('stop screen share', () => socket.emit('stop screen share', socket.id));
+
   socket.on('room message', (room, message) => {
     const { username } = socket.handshake.query;
     socket.to(room).emit('room message', message, username);
