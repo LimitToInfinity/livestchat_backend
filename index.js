@@ -35,21 +35,21 @@ io.on('connection', socket => {
     socket.to(room).emit('room message', message, username);
   });
 
-  socket.on('ask for users', room => {
-    io.to(socket.id).emit('get users', otherUsers(room, socket.id));
+  socket.on('ask for users', (room, mediaType) => {
+    io.to(socket.id).emit('get users', otherUsers(room, socket.id), mediaType);
   })
 
-  socket.on('offer', (offer, socketId, offerType) => {
+  socket.on('offer', (offer, socketId, offerType, mediaType) => {
     const username = users[socket.id];
-    socket.to(socketId).emit('offer', offer, socket.id, username, offerType);
+    socket.to(socketId).emit('offer', offer, socket.id, username, offerType, mediaType);
   });
 
-  socket.on('answer', (answer, senderSocketId) => {
-    socket.to(senderSocketId).emit('answer', answer, socket.id);
+  socket.on('answer', (answer, senderSocketId, mediaType) => {
+    socket.to(senderSocketId).emit('answer', answer, socket.id, mediaType);
   });
 
-  socket.on('candidate', (candidate, socketId, offerOrAnswer) => {
-    socket.to(socketId).emit('candidate', candidate, socket.id, offerOrAnswer);
+  socket.on('candidate', (candidate, socketId, offerOrAnswer, mediaType) => {
+    socket.to(socketId).emit('candidate', candidate, socket.id, offerOrAnswer, mediaType);
   });
 });
 
