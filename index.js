@@ -37,21 +37,21 @@ io.on('connection', socket => {
     socket.to(room).emit('room message', message, username);
   });
 
-  socket.on('ask for users', (room, mediaType) => {
-    io.to(socket.id).emit('get users', otherUsers(room, socket.id), mediaType);
+  socket.on('get users', (room, shareType) => {
+    io.to(socket.id).emit('get users', otherUsers(room, socket.id), shareType);
   })
 
-  socket.on('offer', (offer, socketId, offerType, mediaType) => {
+  socket.on('offer', (offer, socketId, shareType) => {
     const username = users[socket.id];
-    socket.to(socketId).emit('offer', offer, socket.id, username, offerType, mediaType);
+    socket.to(socketId).emit('offer', offer, socket.id, username, shareType);
   });
 
-  socket.on('answer', (answer, senderSocketId, mediaType) => {
-    socket.to(senderSocketId).emit('answer', answer, socket.id, mediaType);
+  socket.on('answer', (answer, senderSocketId, shareType) => {
+    socket.to(senderSocketId).emit('answer', answer, socket.id, shareType);
   });
 
-  socket.on('candidate', (candidate, socketId, offerOrAnswer, mediaType) => {
-    socket.to(socketId).emit('candidate', candidate, socket.id, offerOrAnswer, mediaType);
+  socket.on('candidate', (candidate, socketId, shareType) => {
+    socket.to(socketId).emit('candidate', candidate, socket.id, shareType);
   });
 });
 
